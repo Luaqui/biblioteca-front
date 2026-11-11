@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel da Biblioteca</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 40px;
+      color: #333;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    h1, h2 {
+      color: #2c3e50;
+      margin-bottom: 15px;
+    }
+    p {
+      color: #555;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .btn-cadastrar {
+      background-color: #28a745;
+    }
+    .btn-cadastrar:hover {
+      background-color: #218838;
+    }
+    .btn-editar {
+      background-color: #ffc107;
+      color: #333;
+      padding: 5px 10px;
+      font-size: 14px;
+      margin-right: 5px;
+    }
+    .btn-editar:hover {
+      background-color: #e0a800;
+    }
+    .btn-excluir {
+      background-color: #dc3545;
+      padding: 5px 10px;
+      font-size: 14px;
+    }
+    .btn-excluir:hover {
+      background-color: #c82333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    th {
+      background-color: #f8f9fa;
+      color: #333;
+    }
+    hr {
+      border: 0;
+      height: 1px;
+      background: #eee;
+      margin: 30px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Painel da Biblioteca</h1>
+    <p>Área administrativa para controle de cadastros, atualizações e consulta do acervo.</p>
+
+    <h2 id="tituloFormulario">Cadastrar Novo Livro</h2>
+    <form id="formLivro" onsubmit="salvarLivro(event)">
+      <input type="hidden" id="livroId">
+      <div class="form-group">
+        <label for="titulo">Título:</label>
+        <input type="text" id="titulo" required placeholder="Digite o título do livro">
+      </div>
+      <div class="form-group">
+        <label for="autor">Autor:</label>
+        <input type="text" id="autor" required placeholder="Digite o nome do autor">
+      </div>
+      <div class="form-group">
+        <label for="editora">Editora:</label>
+        <input type="text" id="editora" required placeholder="Digite a editora">
+      </div>
+      <div class="form-group">
+        <label for="isbn">ISBN:</label>
+        <input type="text" id="isbn" required placeholder="Digite o ISBN">
+      </div>
+      <button type="submit" class="btn-cadastrar" id="btnSalvar">Salvar Livro</button>
+    </form>
+
+    <hr>
+
+    <h2>Livros Cadastrados</h2>
+    <button onclick="carregarLivros()">Carregar Livros do Servidor</button>
+    
+    <table id="tabelaLivros">
+      <tr>
+        <th>ID</th>
+        <th>Título</th>
+        <th>Autor</th>
+        <th>Editora</th>
+        <th>ISBN</th>
+        <th>Ações</th>
+      </tr>
+    </table>
+  </div>
+
+  <script>
+
+    function carregarLivros() {
+      axios.get('http://localhost:8080/api/livros')
+        .then(response => {
+          const livros = response.data;
+          const tabela = document.getElementById('tabelaLivros');
+          
+          tabela.innerHTML = `
+            <tr>
+              <th>ID</th>
+              <th>Título</th>
+              <th>Autor</th>
+              <th>Editora</th>
+              <th>ISBN</th>
+              <th>Ações</th>
+            </tr>
+          `;
+          
+          if (livros.length === 0) {
+            const linha = document.createElement('tr');
+            linha.innerHTML = '<td colspan="6">Nenhum livro cadastrado no momento.</td>';
+            tabela.appendChild(linha);
+            return;
+          }
+
+          livros.forEach(livro => {
+            const linha = document.createElement('tr');
+            linha.innerHTML = `
+              <td>${livro.id}</td>
+              <td>${livro.titulo || '-'}</td>
+              <td>${livro.autor || '-'}</td>
+              <td>${livro.editora || '-'}</td>
+              <td>${livro.isbn || '-'}</td>
+              <td>
+                <button class="btn-editar" onclick="prepararEdicao(${livro.id}, '${livro.titulo}', '${livro.autor}', '${livro.editora}', '${livro.isbn}')">Editar</button>
+                <button class="btn-excluir" onclick="excluirLivro(${livro.id})">Excluir</button>
+              </td>
+            `;
+            tabela.appendChild(linha);
+          });
+        })
+        .catch(error => {
+          console.error("Erro ao carregar livros:", error);
+          alert("Não foi possível conectar ao servidor.");
+        });
+    }
+
+    function salvarLivro(event) {
+      event.preventDefault();
+
+      const id = document.getElementById('livroId').value;
+      const dadosLivro = {
+        titulo: document.getElementById('titulo').value,
+        autor: document.getElementById('autor').value,
+        editora: document.getElementById('editora').value,
+        isbn: document.getElementById('isbn').value
+      };
+
+      if (id) {
+
+        axios.put(`http://localhost:8080/api/livros/${id}`, dadosLivro)
+          .then(response => {
+            alert("Livro atualizado com sucesso!");
+            limparFormulario();
+            carregarLivros();
+          })
+          .catch(error => {
+            console.error("Erro ao atualizar livro:", error);
+            alert("Erro ao atualizar o livro.");
+          });
+      } else {
+
+        axios.post('http://localhost:8080/api/livros', dadosLivro)
+          .then(response => {
+            alert("Livro cadastrado com sucesso!");
+            limparFormulario();
+            carregarLivros();
+          })
+          .catch(error => {
+            console.error("Erro ao cadastrar livro:", error);
+            alert("Erro ao salvar o livro.");
+          });
+      }
+    }
+
+    function prepararEdicao(id, titulo, autor, editora, isbn) {
+      document.getElementById('livroId').value = id;
+      document.getElementById('titulo').value = titulo;
+      document.getElementById('autor').value = autor;
+      document.getElementById('editora').value = editora;
+      document.getElementById('isbn').value = isbn;
+      
+      document.getElementById('tituloFormulario').innerText = "Editar Livro (ID: " + id + ")";
+      document.getElementById('btnSalvar').innerText = "Atualizar Livro";
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function excluirLivro(id) {
+      if (confirm("Tem certeza que deseja excluir este livro?")) {
+        axios.delete(`http://localhost:8080/api/livros/${id}`)
+          .then(response => {
+            alert("Livro excluído com sucesso!");
+            carregarLivros();
+          })
+          .catch(error => {
+            console.error("Erro ao excluir livro:", error);
+            alert("Não foi possível excluir o livro.");
+          });
+      }
+    }
+
+    function limparFormulario() {
+      document.getElementById('formLivro').reset();
+      document.getElementById('livroId').value = '';
+      document.getElementById('tituloFormulario').innerText = "Cadastrar Novo Livro";
+      document.getElementById('btnSalvar').innerText = "Salvar Livro";
+    }
+  </script>
+
+</body>
+</html>
